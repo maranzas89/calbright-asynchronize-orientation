@@ -215,33 +215,83 @@ export default function StaffPortalPage() {
     [doneCount, requiredSteps.length]
   );
 
-  return (
-    <div className="min-h-screen bg-[#FFF8EB] px-6 py-10 sm:px-10">
-      <div className="mx-auto max-w-4xl space-y-8">
-        <header className="space-y-2">
-          <div className="text-sm text-[#667085]">Staff Portal / Orientation</div>
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-[#001e5a]">Orientation overview</h1>
-              <p className="mt-2 max-w-2xl text-[#667085]">
-                This page reads/writes the same local state as the Student Portal (demo sync via localStorage).
-              </p>
-            </div>
+  const cornerButtonClass =
+    "w-64 rounded-lg border border-[#DDDDDD] bg-white px-4 py-2 text-center text-sm font-semibold text-[#243041] shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d34508] focus-visible:ring-offset-2";
+  const canResetUploads =
+    underReviewStepIds.includes("expectations") ||
+    !!uploadedFiles.expectations ||
+    underReviewStepIds.includes("aid") ||
+    !!uploadedFiles.aid;
 
-            <div className="rounded-2xl border border-[#E9DDC8] bg-white px-4 py-3 shadow-sm">
-              <div className="text-xs font-semibold uppercase tracking-wide text-[#667085]">Progress</div>
-              <div className="mt-1 text-sm font-semibold text-[#243041]">
-                {doneCount} of {requiredSteps.length} required steps complete
-              </div>
-              <div className="mt-2 h-2 w-56 rounded bg-[#F7F0E4]">
-                <div className="h-2 rounded bg-[#d34508]" style={{ width: `${pct}%` }} />
-              </div>
-              <div className="mt-2 text-xs text-[#667085]">
-                Last updated: {updatedAt ? new Date(updatedAt).toLocaleString() : "—"}
-              </div>
+  return (
+    <div className="relative min-h-screen bg-[#FFF8EB] px-6 py-10 sm:px-10">
+      <div className="fixed left-4 top-4 z-10 hidden md:flex md:flex-col md:gap-3">
+        <a href="/" className={`${cornerButtonClass} hover:bg-[#F7F0E4]`}>
+          Go to student portal view
+        </a>
+        <button
+          type="button"
+          onClick={() => save(defaultSteps)}
+          className={`${cornerButtonClass} cursor-pointer hover:bg-[#F7F0E4]`}
+        >
+          Reset demo data
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setUnderReviewStepIds((prev) => prev.filter((id) => id !== "expectations" && id !== "aid"));
+            setUploadedFiles((prev) => {
+              const next = { ...prev };
+              delete next.expectations;
+              delete next.aid;
+              return next;
+            });
+            try {
+              const raw = window.localStorage.getItem(ORIENTATION_STORAGE_KEY);
+              if (!raw) return;
+              const parsed = JSON.parse(raw) as Record<string, unknown>;
+              const nextUnder = (parsed.underReviewStepIds as string[] || []).filter((id) => id !== "expectations" && id !== "aid");
+              const nextFiles = { ...(parsed.uploadedFiles as Record<string, { name: string; dataUrl: string }> || {}) };
+              delete nextFiles.expectations;
+              delete nextFiles.aid;
+              window.localStorage.setItem(
+                ORIENTATION_STORAGE_KEY,
+                JSON.stringify({ ...parsed, underReviewStepIds: nextUnder, uploadedFiles: nextFiles })
+              );
+            } catch {
+              // ignore
+            }
+          }}
+          disabled={!canResetUploads}
+          className={`${cornerButtonClass} disabled:cursor-not-allowed disabled:opacity-60 enabled:cursor-pointer enabled:hover:bg-[#F7F0E4]`}
+        >
+          Reset uploads (for testing)
+        </button>
+      </div>
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-4 text-sm text-[#667085]">Staff Portal / Orientation</div>
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-3xl font-semibold tracking-tight text-[#001e5a]">Orientation overview</h1>
+            <p className="mt-2 max-w-2xl text-[#667085]">
+              This page reads/writes the same local state as the Student Portal (demo sync via localStorage).
+            </p>
+          </div>
+
+          <div className="shrink-0 rounded-2xl border border-[#E9DDC8] bg-white px-4 py-3 shadow-sm lg:sticky lg:top-8">
+            <div className="text-xs font-semibold uppercase tracking-wide text-[#667085]">Progress</div>
+            <div className="mt-1 text-sm font-semibold text-[#243041]">
+              {doneCount} of {requiredSteps.length} required steps complete
+            </div>
+            <div className="mt-2 h-2 w-56 rounded bg-[#F7F0E4]">
+              <div className="h-2 rounded bg-[#d34508]" style={{ width: `${pct}%` }} />
+            </div>
+            <div className="mt-2 text-xs text-[#667085]">
+              Last updated: {updatedAt ? new Date(updatedAt).toLocaleString() : "—"}
             </div>
           </div>
-        </header>
+        </div>
+        <div className="mt-8 space-y-8">
 
         {/* Data visuals — synced with Student Portal via localStorage */}
         <section
@@ -357,60 +407,11 @@ export default function StaffPortalPage() {
         </section>
 
         <section className="rounded-2xl border border-[#E9DDC8] bg-white p-6 shadow-sm" aria-label="Student steps">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-semibold text-[#001e5a]">Steps (single student demo)</h2>
-              <p className="mt-1 text-sm text-[#667085]">
-                Change a status here, then refresh the Student Portal to see it update.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <a
-                href="/"
-                className="cursor-pointer rounded-lg border border-[#DDDDDD] bg-white px-3 py-2 text-sm font-semibold text-[#243041] transition hover:bg-[#F7F0E4]"
-              >
-                Open student portal
-              </a>
-              <button
-                type="button"
-                onClick={() => save(defaultSteps)}
-                className="cursor-pointer rounded-lg border border-[#DDDDDD] bg-white px-3 py-2 text-sm font-semibold text-[#243041] transition hover:bg-[#F7F0E4] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d34508] focus-visible:ring-offset-2"
-              >
-                Reset demo data
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setUnderReviewStepIds((prev) => prev.filter((id) => id !== "expectations" && id !== "aid"));
-                  setUploadedFiles((prev) => {
-                    const next = { ...prev };
-                    delete next.expectations;
-                    delete next.aid;
-                    return next;
-                  });
-                  try {
-                    const raw = window.localStorage.getItem(ORIENTATION_STORAGE_KEY);
-                    if (!raw) return;
-                    const parsed = JSON.parse(raw) as Record<string, unknown>;
-                    const nextUnder = (parsed.underReviewStepIds as string[] || []).filter((id) => id !== "expectations" && id !== "aid");
-                    const nextFiles = { ...(parsed.uploadedFiles as Record<string, { name: string; dataUrl: string }> || {}) };
-                    delete nextFiles.expectations;
-                    delete nextFiles.aid;
-                    window.localStorage.setItem(
-                      ORIENTATION_STORAGE_KEY,
-                      JSON.stringify({ ...parsed, underReviewStepIds: nextUnder, uploadedFiles: nextFiles })
-                    );
-                  } catch {
-                    // ignore
-                  }
-                }}
-                disabled={!underReviewStepIds.includes("expectations") && !uploadedFiles.expectations && !underReviewStepIds.includes("aid") && !uploadedFiles.aid}
-                className="rounded-lg border border-[#DDDDDD] bg-white px-3 py-2 text-sm font-semibold text-[#243041] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d34508] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-white disabled:hover:text-[#243041] enabled:cursor-pointer enabled:hover:bg-[#F7F0E4]"
-              >
-                Reset uploads (for testing)
-              </button>
-            </div>
+          <div>
+            <h2 className="text-xl font-semibold text-[#001e5a]">Steps (single student demo)</h2>
+            <p className="mt-1 text-sm text-[#667085]">
+              Change a status here, then refresh the Student Portal to see it update.
+            </p>
           </div>
 
           <div className="mt-5 space-y-3">
@@ -521,6 +522,7 @@ export default function StaffPortalPage() {
             </div>
           </details>
         </section>
+        </div>
       </div>
 
       <Modal open={!!openStep} title={openStep?.title ?? "Step"} onClose={() => setOpenStepId(null)}>

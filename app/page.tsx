@@ -433,7 +433,13 @@ export default function CalbrightOrientationPage() {
   const progressLabel = `${completedRequired} of ${requiredSteps.length} required steps complete`;
 
   return (
-    <div className="min-h-screen bg-[var(--cal-bg)] px-6 py-10 sm:px-10">
+    <div className="relative min-h-screen bg-[var(--cal-bg)] px-6 py-10 sm:px-10">
+      <a
+        href="/staff"
+        className="absolute left-4 top-4 z-10 hidden w-64 rounded-lg border border-[var(--cal-border)] bg-white px-4 py-2 text-center text-sm font-semibold text-[var(--cal-text)] shadow-sm transition hover:bg-[var(--cal-surface-2)] md:block"
+      >
+        Go to staff portal view
+      </a>
       <div className="mx-auto max-w-5xl space-y-8">
         {/* Header */}
         <header className="space-y-2">
